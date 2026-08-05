@@ -1,0 +1,23 @@
+# converted dataset - rebuild it with prepare_data.py
+data/
+
+# checkpoints, logs, metrics
+artifacts/
+lightning_logs/
+
+# model weights, downloaded on demand
+*.pt
+*.ckpt
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# editors and os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

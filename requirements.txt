@@ -1,0 +1,16 @@
+# Training and evaluation. Install torch first if you need a specific CUDA build:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+
+torch>=2.4
+torchvision>=0.19
+lightning>=2.4
+ultralytics>=8.4
+torchmetrics>=1.4
+pycocotools>=2.0          # backend for torchmetrics mean average precision
+albumentations>=2.0       # augmentation, including the bbox-aware transforms
+opencv-python>=4.10
+numpy>=1.26
+
+# Only needed to download Open Images. prepare_data.py reads the CSVs itself,
+# so this is not required once the files are on disk.
+fiftyone>=1.0
