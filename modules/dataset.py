@@ -4,11 +4,18 @@ import random
 from pathlib import Path
 from typing import Sequence
 
-import albumentations as A
 import cv2
+
+if not hasattr(cv2, "CV_8U"):
+    raise ImportError(
+        "The installed cv2 package is incomplete or conflicts with another OpenCV wheel. "
+        "Uninstall every opencv-* wheel, then install only opencv-python-headless."
+    )
+
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+import albumentations as A
 from torch.utils.data import Dataset
 
 # each worker process would otherwise start its own pool of 16 OpenCV threads
