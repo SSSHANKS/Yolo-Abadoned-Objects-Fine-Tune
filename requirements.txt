@@ -5,6 +5,7 @@ torch>=2.4
 torchvision>=0.19
 lightning>=2.4
 ultralytics>=8.4
+aim>=3.29,<4
 torchmetrics>=1.4
 pycocotools>=2.0          # backend for torchmetrics mean average precision
 albumentations>=2.0       # augmentation, including the bbox-aware transforms

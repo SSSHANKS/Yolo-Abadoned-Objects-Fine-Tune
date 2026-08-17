@@ -73,6 +73,10 @@ python main.py --data data --epochs 30 --batch-size 8
 python main.py --data data --resume artifacts/checkpoints/epoch=12.ckpt
 ```
 
+For cloud training from a flat `data/frames/images` + `data/frames/labels`
+dataset, open `train_yolo26m_aim.ipynb`. It fine-tunes the pretrained YOLO26m
+checkpoint and logs validation precision, recall, F1, and mAP50 to Aim.
+
 The number of output classes comes from `classes.txt`, so changing the class list
 means editing one file, not chasing a constant through the code.
 
