@@ -73,6 +73,43 @@ python main.py --data data --epochs 30 --batch-size 8
 python main.py --data data --resume artifacts/checkpoints/epoch=12.ckpt
 ```
 
+### Flat cloud dataset with Aim
+
+The command-line trainer also accepts the cloud dataset directly:
+
+```text
+/workspace/data/frames/
+├── classes.txt
+├── images/
+└── labels/
+```
+
+It creates a deterministic 80/20 split in memory, so it does not move, copy, or
+generate files in the dataset directory. Run training from the project root:
+
+```bash
+python main.py \
+    --data /workspace/data/frames \
+    --epochs 100 \
+    --batch-size 8 \
+    --workers 8
+```
+
+Aim is enabled by default. The trainer logs losses, learning rates, precision,
+recall, F1, mAP50, and mAP50-95 once per epoch. To point at a specific Aim
+repository or remote tracking server:
+
+```bash
+python main.py --data /workspace/data/frames --aim-repo /workspace/aim
+python main.py --data /workspace/data/frames --aim-repo aim://aim-server:53800
+```
+
+Use `--no-aim` to train without Aim. By default, training stops after 30 epochs
+without mAP50 improvement, or when precision, recall, F1, and mAP50 are all at
+least `0.90` for three consecutive epochs. Override those values with
+`--patience`, `--target-precision`, `--target-recall`, `--target-f1`,
+`--target-map50`, and `--target-consecutive-epochs`.
+
 For cloud training from a flat `data/frames/images` + `data/frames/labels`
 dataset, open `train_yolo26m_aim.ipynb`. It fine-tunes the pretrained YOLO26m
 checkpoint and logs validation precision, recall, F1, and mAP50 to Aim.

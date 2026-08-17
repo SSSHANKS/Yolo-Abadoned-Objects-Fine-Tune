@@ -1,6 +1,8 @@
 """Reads a detection dataset laid out in the standard YOLO directory format."""
 
+import random
 from pathlib import Path
+from typing import Sequence
 
 import albumentations as A
 import cv2
@@ -25,6 +27,31 @@ def read_class_names(dataset_root: Path) -> tuple[str, ...]:
     if not names:
         raise ValueError(f"{classes_file} is empty")
     return tuple(names)
+
+
+def split_flat_image_paths(
+    dataset_root: Path, val_fraction: float = 0.2, seed: int = 42
+) -> tuple[list[Path], list[Path]]:
+    """Split a flat images/ + labels/ dataset without moving or copying files."""
+    if not 0.0 < val_fraction < 1.0:
+        raise ValueError(f"val_fraction must be between 0 and 1, got {val_fraction}")
+
+    images_dir = Path(dataset_root) / "images"
+    labels_dir = Path(dataset_root) / "labels"
+    if not images_dir.is_dir():
+        raise FileNotFoundError(f"Missing {images_dir}")
+    if not labels_dir.is_dir():
+        raise FileNotFoundError(f"Missing {labels_dir}")
+
+    paths = sorted(
+        path for path in images_dir.iterdir() if path.suffix.lower() in IMAGE_SUFFIXES
+    )
+    if len(paths) < 2:
+        raise ValueError(f"Need at least 2 images in {images_dir}; found {len(paths)}")
+
+    random.Random(seed).shuffle(paths)
+    val_size = max(1, min(len(paths) - 1, round(len(paths) * val_fraction)))
+    return sorted(paths[val_size:]), sorted(paths[:val_size])
 
 
 def build_augmentation() -> A.Compose:
@@ -62,26 +89,37 @@ class DetectionDataset(Dataset):
     def __init__(
         self,
         dataset_root: Path,
-        split: str,
+        split: str | None,
         image_size: int = 640,
         augment: bool = False,
         keep_empty: bool = False,
+        image_paths: Sequence[Path] | None = None,
     ) -> None:
         self.dataset_root = Path(dataset_root)
-        self.split = split
+        self.split = split or "selected"
         self.img_size = image_size
         self.augment = augment
 
         self.class_names = read_class_names(self.dataset_root)
 
-        images_dir = self.dataset_root / split / "images"
-        labels_dir = self.dataset_root / split / "labels"
-        if not images_dir.is_dir():
-            raise FileNotFoundError(f"Missing {images_dir}")
+        if image_paths is None:
+            if split is None:
+                raise ValueError("split is required when image_paths is not supplied")
+            images_dir = self.dataset_root / split / "images"
+            labels_dir = self.dataset_root / split / "labels"
+            if not images_dir.is_dir():
+                raise FileNotFoundError(f"Missing {images_dir}")
+            selected_paths = sorted(images_dir.iterdir())
+        else:
+            images_dir = self.dataset_root / "images"
+            labels_dir = self.dataset_root / "labels"
+            if not labels_dir.is_dir():
+                raise FileNotFoundError(f"Missing {labels_dir}")
+            selected_paths = sorted(Path(path) for path in image_paths)
 
         self.image_paths: list[Path] = []
         self.labels: list[np.ndarray] = []
-        for image_path in sorted(images_dir.iterdir()):
+        for image_path in selected_paths:
             if image_path.suffix.lower() not in IMAGE_SUFFIXES:
                 continue
             boxes = self._read_label(labels_dir / f"{image_path.stem}.txt")
@@ -91,7 +129,7 @@ class DetectionDataset(Dataset):
             self.labels.append(boxes)
 
         if not self.image_paths:
-            raise ValueError(f"No usable samples in {images_dir}")
+            raise ValueError(f"No usable samples selected from {images_dir}")
 
         highest = max((boxes[:, 0].max() for boxes in self.labels if len(boxes)), default=-1)
         if highest >= len(self.class_names):
